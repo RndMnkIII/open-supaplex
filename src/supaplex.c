@@ -45,6 +45,10 @@
 #include "virtualKeyboard.h"
 #include "system.h"
 
+#if defined(USE_PAK_RESOURCES)
+#include "supaplex_pak.h"
+#endif
+
 #ifdef __PSP__
 #include <pspkernel.h>
 
@@ -1522,6 +1526,15 @@ int main(int argc, char *argv[])
 
     initializeLogging();
     initializeSystem();
+
+#if defined(USE_PAK_RESOURCES)
+    {
+        char pakPath[kMaxFilePathLength];
+        getReadonlyFilePath("SUPAPLEX.pak", pakPath);
+        pak_system_init(pakPath, NULL, 0);
+    }
+#endif
+
     initializeVideo(gFastMode);
     initializeControllers();
 
@@ -1768,6 +1781,10 @@ int main(int argc, char *argv[])
     destroyLogging();
     destroyVideo();
     destroySystem();
+
+#if defined(USE_PAK_RESOURCES)
+    pak_system_shutdown();
+#endif
 
     return runResult;
 }

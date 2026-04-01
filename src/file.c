@@ -21,6 +21,39 @@
 
 #include "utils.h"
 
+#if defined(USE_PAK_RESOURCES)
+#include "supaplex_pak.h"
+#if defined(HAVE_FMEMOPEN)
+#include <stdio.h>
+#endif
+#endif
+
+// Helper: try opening a read-only resource from the PAK system.
+// Returns a FILE* backed by in-memory PAK data via fmemopen, or NULL if
+// the resource is not present in the PAK (or the PAK is not available).
+static FILE *tryOpenFromPak(const char *pathname, const char *mode)
+{
+#if defined(USE_PAK_RESOURCES) && defined(HAVE_FMEMOPEN)
+    if (pak_system_is_ready())
+    {
+        uint32_t size;
+        void *data = pak_load_resource(pathname, &size);
+        if (data != NULL)
+        {
+            FILE *f = fmemopen(data, size, mode);
+            if (f != NULL)
+            {
+                return f;
+            }
+        }
+    }
+#else
+    (void)pathname;
+    (void)mode;
+#endif
+    return NULL;
+}
+
 #if defined(FILE_FHS_XDG_DIRS)
 
 #if defined(FILE_DATA_PATH)
@@ -142,6 +175,11 @@ void getWritableFilePath(const char *pathname, char outPath[kMaxFilePathLength])
 
 FILE *openReadonlyFile(const char *pathname, const char *mode)
 {
+    FILE *pakFile = tryOpenFromPak(pathname, mode);
+    if (pakFile != NULL)
+    {
+        return pakFile;
+    }
     char finalPathname[kMaxFilePathLength];
     getReadonlyFilePath(pathname, finalPathname);
     return fopen(finalPathname, mode);
@@ -197,6 +235,11 @@ void getWritableFilePath(const char *pathname, char outPath[kMaxFilePathLength])
 
 FILE *openReadonlyFile(const char *pathname, const char *mode)
 {
+    FILE *pakFile = tryOpenFromPak(pathname, mode);
+    if (pakFile != NULL)
+    {
+        return pakFile;
+    }
     char finalPathname[kMaxFilePathLength];
     getReadonlyFilePath(pathname, finalPathname);
     return fopen(finalPathname, mode);
