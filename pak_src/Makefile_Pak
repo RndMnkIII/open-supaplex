@@ -1,0 +1,70 @@
+CC = gcc
+CFLAGS = -Wall -Wextra -std=c99 -O2
+LDFLAGS = -lSDL2 -lSDL2_mixer -lm
+
+# Archivos fuente
+SOURCES = supaplex.c \
+          pak_tool_v2.c \
+          crc32.c \
+          supaplex_pak.c \
+          resource_compat.c \
+          resource_loader.c
+
+HEADERS = pak_format.h \
+          supaplex_pak.h \
+          resource_compat.h \
+          resource_loader.h \
+          crc32.h
+
+OBJECTS = $(SOURCES:.c=.o)
+TARGET = supaplex
+
+# Herramientas
+PAK_TOOL = pak_tool
+
+.PHONY: all clean pak_tool help
+
+# Target principal
+all: $(TARGET) $(PAK_TOOL)
+
+$(TARGET): $(OBJECTS)
+	@echo "🔨 Enlazando juego..."
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	@echo "✅ Juego compilado: $(TARGET)"
+
+$(PAK_TOOL): pak_tool_v2.c crc32.c
+	@echo "🔨 Compilando herramienta PAK..."
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	@echo "✅ Herramienta compilada: $(PAK_TOOL)"
+
+%.o: %.c $(HEADERS)
+	@echo "  → $<"
+	@$(CC) $(CFLAGS) -c -o $@ $<
+
+clean:
+	@echo "🧹 Limpiando..."
+	rm -f $(OBJECTS) $(TARGET) $(PAK_TOOL)
+	@echo "✅ Limpieza completa"
+
+pak: $(PAK_TOOL)
+	@echo ""
+	@echo "📦 Creando PAK de recursos..."
+	./$(PAK_TOOL) create ./resources ./SUPAPLEX.pak
+	@echo ""
+
+pak_list:
+	./$(PAK_TOOL) list ./SUPAPLEX.pak
+
+pak_info:
+	./$(PAK_TOOL) info ./SUPAPLEX.pak
+
+help:
+	@echo "Supaplex Build System with PAK Support"
+	@echo ""
+	@echo "Targets:"
+	@echo "  make          - Compilar juego y herramienta PAK"
+	@echo "  make clean    - Limpiar archivos compilados"
+	@echo "  make pak      - Crear SUPAPLEX.pak desde ./resources"
+	@echo "  make pak_list - Listar contenido de SUPAPLEX.pak"
+	@echo "  make pak_info - Ver info detallada de SUPAPLEX.pak"
+	@echo ""
